@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -31,17 +32,8 @@ func NewConvit() *Convit {
 
 // Prompt the user for an optional sub-type (scope) for the commit
 func (c *Convit) promptForOptionalSubType() (string, error) {
-	var wantsScope bool
-	if err := huh.NewConfirm().Title("Do you want to specify an optional scope?").Value(&wantsScope).Run(); err != nil {
-		return "", err
-	}
-
-	if !wantsScope {
-		return "", nil
-	}
-
 	var scope string
-	if err := huh.NewInput().Title("Select the optional scope of your commit").Value(&scope).Run(); err != nil {
+	if err := huh.NewInput().Title("Provide an optional scope (leave empty for none)").Value(&scope).Run(); err != nil {
 		return "", err
 	}
 
@@ -50,7 +42,7 @@ func (c *Convit) promptForOptionalSubType() (string, error) {
 
 // Prompt the user for the main commit type and optional sub-type
 func (c *Convit) promptForScope() (string, error) {
-	var main string
+	var main, opt string
 	options := []huh.Option[string]{
 		huh.NewOption("feat: Adds or removes a new feature", "feat"),
 		huh.NewOption("fix: Fixes a bug", "fix"),
@@ -69,29 +61,33 @@ func (c *Convit) promptForScope() (string, error) {
 		return "", err
 	}
 
-	// Ensure the type is not empty
-	if len(main) == 0 {
-		log.Error("Type cannot be empty")
-		os.Exit(0)
-	}
+	form := huh.NewForm(
+		huh.NewGroup(
+			huh.NewSelect[string]().Title("Select the type of commit").Options(options...).Value(&main).Filtering(true).Validate(func(val string) error {
+				if len(val) == 0 {
+					return errors.New("type cannot be empty")
+				}
 
-	// If the user has disabled the prompt for optional sub-types, return the main type
-	if !CONFIG.Data.PromptForOptionalSubType {
-		return main, nil
-	}
+				return nil
+			}),
+		),
+		huh.NewGroup(
+			huh.NewInput().Title("Provide an optional scope (leave empty for none)").Value(&opt),
+		).WithHideFunc(func() bool {
+			return !CONFIG.Data.PromptForOptionalSubType
+		}),
+	)
 
-	scope := main
-	opt, err := c.promptForOptionalSubType()
-	if err != nil {
+	if err := form.Run(); err != nil {
 		return "", err
 	}
 
-	// Combine main type and optional sub-type if provided
-	if len(opt) > 0 {
-		scope = fmt.Sprintf("%s(%s)", scope, opt)
+	// Just use the main type if no optional sub-type is provided
+	if len(opt) == 0 {
+		return main, nil
 	}
 
-	return scope, nil
+	return fmt.Sprintf("%s(%s)", main, opt), nil
 }
 
 // Prompts the user for the commit message
