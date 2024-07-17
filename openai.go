@@ -94,7 +94,7 @@ func NewOpenAI(apiKey string) *OpenAI {
 
 func (o *OpenAI) GetChatCompletion(diff string, msg string) (string, error) {
 	client := openai.NewClient(o.ApiKey)
-	prompt := fmt.Sprintf("%s\n\n%s", msg, prepareDiff(diff))
+	prompt := fmt.Sprintf("message: %s\n\ndiff: %s", msg, prepareDiff(diff))
 	resp, err := client.CreateChatCompletion(
 		context.Background(),
 		openai.ChatCompletionRequest{

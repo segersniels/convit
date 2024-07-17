@@ -7,6 +7,8 @@ import (
 	"strings"
 
 	"github.com/charmbracelet/huh"
+	"github.com/charmbracelet/huh/spinner"
+	"github.com/charmbracelet/lipgloss"
 	"github.com/charmbracelet/log"
 )
 
@@ -149,14 +151,18 @@ func (c *Convit) Generate() error {
 
 	diff, err := getStagedChanges()
 	if err != nil {
-		log.Fatal("Failed to get staged changes", "error", err)
+		return err
 	}
 
 	var response string
 	for {
-		response, err = c.client.GetChatCompletion(diff, msg)
-		if err != nil {
-			log.Fatal("Failed to generate commit", "error", err)
+		if err := spinner.New().TitleStyle(lipgloss.NewStyle()).Title("Generating your commit message...").Action(func() {
+			response, err = c.client.GetChatCompletion(diff, msg)
+			if err != nil {
+				log.Fatal(err)
+			}
+		}).Run(); err != nil {
+			return err
 		}
 
 		var confirmation bool
