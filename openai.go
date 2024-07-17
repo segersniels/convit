@@ -82,6 +82,15 @@ func prepareDiff(diff string) string {
 	return strings.Join(removeLockFiles(chunks), "\n")
 }
 
+func prepareSystemMessage() string {
+	examples := "Example of the types with the description when they should be used:\n"
+	for _, ct := range CommitTypes {
+		examples += fmt.Sprintf("- %s: %s\n", ct.Type, ct.Description)
+	}
+
+	return fmt.Sprintf("%s\n\n%s", CONFIG.Data.GenerateSystemMessage, examples)
+}
+
 type OpenAI struct {
 	ApiKey string
 }
@@ -94,6 +103,7 @@ func NewOpenAI(apiKey string) *OpenAI {
 
 func (o *OpenAI) GetChatCompletion(diff string, msg string) (string, error) {
 	client := openai.NewClient(o.ApiKey)
+	system := prepareSystemMessage()
 	prompt := fmt.Sprintf("message: %s\n\ndiff: %s", msg, prepareDiff(diff))
 	resp, err := client.CreateChatCompletion(
 		context.Background(),
@@ -102,7 +112,7 @@ func (o *OpenAI) GetChatCompletion(diff string, msg string) (string, error) {
 			Messages: []openai.ChatCompletionMessage{
 				{
 					Role:    openai.ChatMessageRoleSystem,
-					Content: CONFIG.Data.GenerateSystemMessage,
+					Content: system,
 				},
 				{
 					Role:    openai.ChatMessageRoleUser,
@@ -112,14 +122,14 @@ func (o *OpenAI) GetChatCompletion(diff string, msg string) (string, error) {
 		},
 	)
 
-	log.Debug("System", "message", CONFIG.Data.GenerateSystemMessage)
-	log.Debug("Prompt", "prompt", prompt)
+	log.Debug("", "system", system)
+	log.Debug("", "prompt", prompt)
 
 	if err != nil {
 		return "", err
 	}
 
-	log.Debug("Run status", "usage", resp.Usage)
+	log.Debug("", "usage", resp.Usage)
 
 	return resp.Choices[0].Message.Content, nil
 }

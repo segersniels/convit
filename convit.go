@@ -13,6 +13,25 @@ import (
 	"github.com/charmbracelet/log"
 )
 
+type CommitType struct {
+	Type        string
+	Description string
+}
+
+var CommitTypes = []CommitType{
+	{Type: "feat", Description: "Adds or removes a new feature"},
+	{Type: "fix", Description: "Fixes a bug"},
+	{Type: "refactor", Description: "A code change that neither fixes a bug nor adds a feature, eg. renaming a variable, removing dead code, etc."},
+	{Type: "docs", Description: "Documentation only changes"},
+	{Type: "style", Description: "Changes the style of the code eg. linting"},
+	{Type: "perf", Description: "Improves the performance of the code"},
+	{Type: "test", Description: "Adding missing tests or correcting existing tests"},
+	{Type: "chore", Description: "Changes that don't change source code or tests"},
+	{Type: "build", Description: "Changes that affect the build system or external dependencies (example scopes: gulp, broccoli, npm)"},
+	{Type: "ci", Description: "Changes to CI configuration files and scripts"},
+	{Type: "revert", Description: "Reverts a previous commit"},
+}
+
 type Convit struct {
 	client *OpenAI
 }
@@ -33,18 +52,9 @@ func NewConvit() *Convit {
 // Prompt the user for the main commit type and optional sub-type
 func (c *Convit) promptForScope() (string, error) {
 	var main, opt string
-	options := []huh.Option[string]{
-		huh.NewOption("feat: Adds or removes a new feature", "feat"),
-		huh.NewOption("fix: Fixes a bug", "fix"),
-		huh.NewOption("refactor: A code change that neither fixes a bug nor adds a feature, eg. renaming a variable, removing dead code, etc.", "refactor"),
-		huh.NewOption("docs: Documentation only changes", "docs"),
-		huh.NewOption("style: Changes the style of the code eg. linting", "style"),
-		huh.NewOption("perf: Improves the performance of the code", "perf"),
-		huh.NewOption("test: Adding missing tests or correcting existing tests", "test"),
-		huh.NewOption("chore: Changes that don't change source code or tests", "chore"),
-		huh.NewOption("build: Changes that affect the build system or external dependencies (example scopes: gulp, broccoli, npm)", "build"),
-		huh.NewOption("ci: Changes to CI configuration files and scripts", "ci"),
-		huh.NewOption("revert: Reverts a previous commit", "revert"),
+	options := make([]huh.Option[string], len(CommitTypes))
+	for i, ct := range CommitTypes {
+		options[i] = huh.NewOption(fmt.Sprintf("%s: %s", ct.Type, ct.Description), ct.Type)
 	}
 
 	form := huh.NewForm(
