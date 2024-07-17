@@ -30,16 +30,6 @@ func NewConvit() *Convit {
 	}
 }
 
-// Prompt the user for an optional sub-type (scope) for the commit
-func (c *Convit) promptForOptionalSubType() (string, error) {
-	var scope string
-	if err := huh.NewInput().Title("Provide an optional scope (leave empty for none)").Value(&scope).Run(); err != nil {
-		return "", err
-	}
-
-	return scope, nil
-}
-
 // Prompt the user for the main commit type and optional sub-type
 func (c *Convit) promptForScope() (string, error) {
 	var main, opt string
