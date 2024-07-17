@@ -57,10 +57,6 @@ func (c *Convit) promptForScope() (string, error) {
 		huh.NewOption("revert: Reverts a previous commit", "revert"),
 	}
 
-	if err := huh.NewSelect[string]().Title("Select the type of commit").Options(options...).Value(&main).Filtering(true).Run(); err != nil {
-		return "", err
-	}
-
 	form := huh.NewForm(
 		huh.NewGroup(
 			huh.NewSelect[string]().Title("Select the type of commit").Options(options...).Value(&main).Filtering(true).Validate(func(val string) error {
