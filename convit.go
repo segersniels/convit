@@ -2,16 +2,29 @@ package main
 
 import (
 	"fmt"
+	"os"
 	"os/exec"
 	"strings"
 
 	"github.com/charmbracelet/huh"
+	"github.com/charmbracelet/log"
 )
 
-type Convit struct{}
+type Convit struct {
+	client *OpenAI
+}
 
 func NewConvit() *Convit {
-	return &Convit{}
+	apiKey := os.Getenv("OPENAI_API_KEY")
+	if len(apiKey) == 0 {
+		return &Convit{
+			client: nil,
+		}
+	}
+
+	return &Convit{
+		client: NewOpenAI(apiKey),
+	}
 }
 
 // Prompt the user for an optional sub-type (scope) for the commit
@@ -39,13 +52,13 @@ func (c *Convit) promptForScope() (string, error) {
 	options := []huh.Option[string]{
 		huh.NewOption("feat: Adds or removes a new feature", "feat"),
 		huh.NewOption("fix: Fixes a bug", "fix"),
-		huh.NewOption("refactor: Changes the structure of the code", "refactor"),
-		huh.NewOption("docs: Updates to documentation", "docs"),
+		huh.NewOption("refactor: A code change that neither fixes a bug nor adds a feature, eg. renaming a variable, copy or rewriting a function while retaining same functionality", "refactor"),
+		huh.NewOption("docs: Documentation only changes", "docs"),
 		huh.NewOption("style: Changes the style of the code eg. linting", "style"),
 		huh.NewOption("perf: Improves the performance of the code", "perf"),
-		huh.NewOption("test: Changes to the tests", "test"),
-		huh.NewOption("chore: Miscellaneous commits e.g. modifying .gitignore", "chore"),
-		huh.NewOption("build: Changes that affect build components like build tool, dependencies, project version, etc.", "build"),
+		huh.NewOption("test: Adding missing tests or correcting existing tests", "test"),
+		huh.NewOption("chore: Changes that don't change source code or tests", "chore"),
+		huh.NewOption("build: Changes that affect the build system or external dependencies (example scopes: gulp, broccoli, npm)", "build"),
 		huh.NewOption("ci: Changes to CI configuration files and scripts", "ci"),
 		huh.NewOption("revert: Reverts a previous commit", "revert"),
 	}
@@ -56,7 +69,8 @@ func (c *Convit) promptForScope() (string, error) {
 
 	// Ensure the type is not empty
 	if len(main) == 0 {
-		return "", fmt.Errorf("type cannot be empty")
+		log.Error("Type cannot be empty")
+		os.Exit(0)
 	}
 
 	// If the user has disabled the prompt for optional sub-types, return the main type
@@ -86,7 +100,8 @@ func (c *Convit) promptForMessage() (string, error) {
 	}
 
 	if len(msg) == 0 {
-		return "", fmt.Errorf("message cannot be empty")
+		log.Error("Message cannot be empty")
+		os.Exit(0)
 	}
 
 	// Ensure the first letter of the message is lowercase
@@ -116,6 +131,45 @@ func (c *Convit) Commit() error {
 
 	// Execute the git commit command
 	cmd := exec.Command("git", "commit", "-m", conv)
+
+	return cmd.Run()
+}
+
+func (c *Convit) Generate() error {
+	// Get the commit message
+	msg, err := c.promptForMessage()
+	if err != nil {
+		return err
+	}
+
+	// Check if the OpenAI client is initialized
+	if c.client == nil {
+		return fmt.Errorf("\"OPENAI_API_KEY\" is not set")
+	}
+
+	diff, err := getStagedChanges()
+	if err != nil {
+		log.Fatal("Failed to get staged changes", "error", err)
+	}
+
+	var response string
+	for {
+		response, err = c.client.GetChatCompletion(diff, msg)
+		if err != nil {
+			log.Fatal("Failed to generate commit", "error", err)
+		}
+
+		var confirmation bool
+		if err := huh.NewConfirm().Title(response).Description("Do you want to commit this message?").Value(&confirmation).Run(); err != nil {
+			return err
+		}
+
+		if confirmation {
+			break
+		}
+	}
+
+	cmd := exec.Command("git", "commit", "-m", response)
 
 	return cmd.Run()
 }
