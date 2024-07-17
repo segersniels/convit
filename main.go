@@ -45,7 +45,7 @@ Don't include a message body, just the commit title. Don't surround it in backti
 Example of the types with the description when they should be used:
 - feat: Adds or removes a new feature
 - fix: Fixes a bug
-- refactor: A code change that neither fixes a bug nor adds a feature, eg. renaming a variable, copy or rewriting a function while retaining same functionality
+- refactor: A code change that neither fixes a bug nor adds a feature, eg. renaming a variable, removing dead code, etc.
 - docs: Documentation only changes
 - style: Changes the style of the code eg. linting
 - perf: Improves the performance of the code

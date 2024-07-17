@@ -36,7 +36,7 @@ func (c *Convit) promptForScope() (string, error) {
 	options := []huh.Option[string]{
 		huh.NewOption("feat: Adds or removes a new feature", "feat"),
 		huh.NewOption("fix: Fixes a bug", "fix"),
-		huh.NewOption("refactor: A code change that neither fixes a bug nor adds a feature, eg. renaming a variable, copy or rewriting a function while retaining same functionality", "refactor"),
+		huh.NewOption("refactor: A code change that neither fixes a bug nor adds a feature, eg. renaming a variable, removing dead code, etc.", "refactor"),
 		huh.NewOption("docs: Documentation only changes", "docs"),
 		huh.NewOption("style: Changes the style of the code eg. linting", "style"),
 		huh.NewOption("perf: Improves the performance of the code", "perf"),
