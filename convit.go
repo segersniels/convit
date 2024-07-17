@@ -45,7 +45,7 @@ func (c *Convit) promptForScope() (string, error) {
 		huh.NewOption("perf: Improves the performance of the code", "perf"),
 		huh.NewOption("test: Changes to the tests", "test"),
 		huh.NewOption("chore: Miscellaneous commits e.g. modifying .gitignore", "chore"),
-		huh.NewOption("build: Changes that affect build components like build tool, ci pipeline, dependencies, project version, etc.", "build"),
+		huh.NewOption("build: Changes that affect build components like build tool, dependencies, project version, etc.", "build"),
 		huh.NewOption("ci: Changes to CI configuration files and scripts", "ci"),
 		huh.NewOption("revert: Reverts a previous commit", "revert"),
 	}
