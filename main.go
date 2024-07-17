@@ -101,7 +101,6 @@ func main() {
 						Name:  "init",
 						Usage: "Initialize the config",
 						Action: func(ctx *cli.Context) error {
-							models := huh.NewOptions(openai.GPT4o, openai.GPT4Turbo, openai.GPT3Dot5Turbo)
 							form := huh.NewForm(
 								huh.NewGroup(
 									huh.NewConfirm().
@@ -115,10 +114,6 @@ func main() {
 										Description("This will ask if you want to specify an optional scope for your commit.").
 										Value(&CONFIG.Data.PromptForOptionalSubType),
 								),
-								huh.NewGroup(
-									huh.NewSelect[string]().Title("Model").Description("Configure the default model").Options(models...).Value(&CONFIG.Data.GenerateModel),
-									huh.NewText().Title("System Message").Description("Configure the default system message").CharLimit(99999).Value(&CONFIG.Data.GenerateSystemMessage),
-								),
 							)
 
 							err := form.Run()
@@ -129,6 +124,30 @@ func main() {
 							log.Info("Configuration updated successfully!")
 
 							return CONFIG.Save()
+						},
+						Subcommands: []*cli.Command{
+							{
+								Name:  "ai",
+								Usage: "Initialize the AI config",
+								Action: func(ctx *cli.Context) error {
+									models := huh.NewOptions(openai.GPT4o, openai.GPT4Turbo, openai.GPT3Dot5Turbo)
+									form := huh.NewForm(
+										huh.NewGroup(
+											huh.NewSelect[string]().Title("Model").Description("Configure the default model").Options(models...).Value(&CONFIG.Data.GenerateModel),
+											huh.NewText().Title("System Message").Description("Configure the default system message").CharLimit(99999).Value(&CONFIG.Data.GenerateSystemMessage),
+										),
+									)
+
+									err := form.Run()
+									if err != nil {
+										return err
+									}
+
+									log.Info("Configuration updated successfully!")
+
+									return CONFIG.Save()
+								},
+							},
 						},
 					},
 					{
