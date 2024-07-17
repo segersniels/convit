@@ -128,7 +128,7 @@ func (c *Convit) Generate() error {
 
 	// Check if the OpenAI client is initialized
 	if c.client == nil {
-		return fmt.Errorf("\"OPENAI_API_KEY\" is not set")
+		return errors.New("\"OPENAI_API_KEY\" is not set")
 	}
 
 	diff, err := getStagedChanges()
