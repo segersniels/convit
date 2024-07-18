@@ -36,29 +36,23 @@ func splitDiffIntoChunks(diff string) []string {
 
 func removeLockFiles(chunks []string) []string {
 	var wg sync.WaitGroup
-
-	filtered := make(chan string)
+	filtered := make(chan string, len(chunks))
 
 	for _, chunk := range chunks {
 		wg.Add(1)
-
 		go func(chunk string) {
 			defer wg.Done()
-			shouldIgnore := false
 			header := strings.Split(chunk, "\n")[0]
 
-			// Check if the first line contains any of the files to ignore
 			for _, file := range FILES_TO_IGNORE {
 				if strings.Contains(header, file) {
 					log.Debug("Ignoring", "file", file)
-					shouldIgnore = true
+					return
 				}
 			}
 
-			if !shouldIgnore {
-				log.Debug("Using", "header", header)
-				filtered <- chunk
-			}
+			log.Debug("Using", "header", header)
+			filtered <- chunk
 		}(chunk)
 	}
 
@@ -122,13 +116,12 @@ func (o *OpenAI) GetChatCompletion(diff string, msg string) (string, error) {
 		},
 	)
 
-	log.Debug("", "system", system)
-	log.Debug("", "prompt", prompt)
-
 	if err != nil {
 		return "", err
 	}
 
+	log.Debug("", "system", system)
+	log.Debug("", "prompt", prompt)
 	log.Debug("", "usage", resp.Usage)
 
 	return resp.Choices[0].Message.Content, nil
