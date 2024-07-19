@@ -21,7 +21,7 @@ type CommitType struct {
 var CommitTypes = []CommitType{
 	{Type: "feat", Description: "Adds or removes a new feature"},
 	{Type: "fix", Description: "Fixes a bug"},
-	{Type: "refactor", Description: "A code change that neither fixes a bug nor adds a feature, eg. renaming a variable, removing dead code, etc."},
+	{Type: "refactor", Description: "A code change that neither fixes a bug nor adds a feature, eg. renaming a variable, remove dead code, etc."},
 	{Type: "docs", Description: "Documentation only changes"},
 	{Type: "style", Description: "Changes the style of the code eg. linting"},
 	{Type: "perf", Description: "Improves the performance of the code"},
