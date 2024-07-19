@@ -10,6 +10,13 @@ import (
 	openai "github.com/sashabaranov/go-openai"
 )
 
+const (
+	GPT4oMini     = "gpt-4o-mini"
+	GPT4o         = "gpt-4o"
+	GPT4Turbo     = "gpt-4-turbo"
+	GPT3Dot5Turbo = "gpt-3.5-turbo"
+)
+
 var FILES_TO_IGNORE = []string{
 	"package-lock.json",
 	"yarn.lock",

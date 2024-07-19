@@ -7,7 +7,6 @@ import (
 
 	"github.com/charmbracelet/huh"
 	"github.com/charmbracelet/log"
-	"github.com/sashabaranov/go-openai"
 	"github.com/segersniels/config"
 	"github.com/urfave/cli/v2"
 )
@@ -25,7 +24,7 @@ type ConfigData struct {
 var CONFIG = config.NewConfig("convit", ConfigData{
 	LowerCaseFirstLetter:     true,
 	PromptForOptionalSubType: true,
-	GenerateModel:            openai.GPT4o,
+	GenerateModel:            GPT4oMini,
 	GenerateSystemMessage: `Generate a conventional commit message that follows the Conventional Commits specification as described below.
 
 A scope may be provided to a commit’s type, to provide additional contextual information and is contained within parenthesis, e.g., feat(parser): add ability to parse arrays.
@@ -110,7 +109,7 @@ func main() {
 								Name:  "ai",
 								Usage: "Initialize the AI config",
 								Action: func(ctx *cli.Context) error {
-									models := huh.NewOptions(openai.GPT4o, openai.GPT4Turbo, openai.GPT3Dot5Turbo)
+									models := huh.NewOptions(GPT4oMini, GPT4o, GPT4Turbo, GPT3Dot5Turbo)
 									form := huh.NewForm(
 										huh.NewGroup(
 											huh.NewSelect[string]().Title("Model").Description("Configure the default model").Options(models...).Value(&CONFIG.Data.GenerateModel),
