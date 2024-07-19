@@ -2,6 +2,8 @@
 
 In an effort to make it easier to write conventional commit messages, `convit` is a command-line tool that allows you to write conventional commit messages.
 
+![img](./demo.gif)
+
 ## Install
 
 ```bash

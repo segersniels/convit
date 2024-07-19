@@ -32,3 +32,6 @@ version:
 
 lint:
 	@go fmt .
+
+demo:
+	@vhs demo.tape
