@@ -160,10 +160,9 @@ func (c *Convit) Commit() error {
 	return cmd.Run()
 }
 
-func (c *Convit) Generate(full bool) error {
+func (c *Convit) Generate(partial bool) error {
 	var msg *string
-	if !full {
-		// Get the commit message
+	if partial {
 		message, err := c.promptForMessage()
 		if err != nil {
 			return err
