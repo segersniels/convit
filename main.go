@@ -14,6 +14,14 @@ import (
 var AppVersion string
 var AppName string
 
+const (
+	GPT4o             = "gpt-4o"
+	GPT4oMini         = "gpt-4o-mini"
+	GPT4Turbo         = "gpt-4-turbo"
+	GPT3Dot5Turbo     = "gpt-3.5-turbo"
+	Claude3Dot5Sonnet = "claude-3-5-sonnet-20240620"
+)
+
 type ConfigData struct {
 	LowerCaseFirstLetter     bool   `json:"lower_case_first_letter"`
 	PromptForOptionalSubType bool   `json:"prompt_for_optional_sub_type"`
@@ -25,14 +33,7 @@ var CONFIG = config.NewConfig("convit", ConfigData{
 	LowerCaseFirstLetter:     true,
 	PromptForOptionalSubType: true,
 	GenerateModel:            GPT4oMini,
-	GenerateSystemMessage: `Generate a conventional commit message that follows the Conventional Commits specification as described below.
-
-A scope may be provided to a commit’s type, to provide additional contextual information and is contained within parenthesis, e.g., feat(parser): add ability to parse arrays.
-It is your job to come up with only the type and optional scope based on the provided commit message and staged changes (diff) and then reply with the full commit message.
-Don't touch the original provided commit message, just include it and don't add stuff to it.
-
-Base yourself on the adjusted files in the diff and the actual code changes to determine what the type and scope of the message should be.
-Don't include a message body, just the commit title. Don't surround it in backticks or anything of custom markdown formatting.`,
+	GenerateSystemMessage:    SYSTEM_MESSAGE,
 })
 
 func main() {
@@ -109,7 +110,7 @@ func main() {
 								Name:  "ai",
 								Usage: "Initialize the AI config",
 								Action: func(ctx *cli.Context) error {
-									models := huh.NewOptions(GPT4oMini, GPT4o, GPT4Turbo, GPT3Dot5Turbo)
+									models := huh.NewOptions(GPT4oMini, GPT4o, GPT4Turbo, GPT3Dot5Turbo, Claude3Dot5Sonnet)
 									form := huh.NewForm(
 										huh.NewGroup(
 											huh.NewSelect[string]().Title("Model").Description("Configure the default model").Options(models...).Value(&CONFIG.Data.GenerateModel),

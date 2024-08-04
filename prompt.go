@@ -1,21 +1,21 @@
 package main
 
 import (
-	"context"
+	"errors"
 	"fmt"
+	"os/exec"
 	"strings"
 	"sync"
-
-	"github.com/charmbracelet/log"
-	openai "github.com/sashabaranov/go-openai"
 )
 
-const (
-	GPT4oMini     = "gpt-4o-mini"
-	GPT4o         = "gpt-4o"
-	GPT4Turbo     = "gpt-4-turbo"
-	GPT3Dot5Turbo = "gpt-3.5-turbo"
-)
+const SYSTEM_MESSAGE string = `Generate a conventional commit message that follows the Conventional Commits specification as described below.
+
+A scope may be provided to a commit’s type, to provide additional contextual information and is contained within parenthesis, e.g., feat(parser): add ability to parse arrays.
+It is your job to come up with only the type and optional scope based on the provided commit message and staged changes (diff) and then reply with the full commit message.
+Don't touch the original provided commit message, just include it and don't add stuff to it.
+
+Base yourself on the adjusted files in the diff and the actual code changes to determine what the type and scope of the message should be.
+Don't include a message body, just the commit title. Don't surround it in backticks or anything of custom markdown formatting.`
 
 var FILES_TO_IGNORE = []string{
 	"package-lock.json",
@@ -43,23 +43,27 @@ func splitDiffIntoChunks(diff string) []string {
 
 func removeLockFiles(chunks []string) []string {
 	var wg sync.WaitGroup
-	filtered := make(chan string, len(chunks))
+
+	filtered := make(chan string)
 
 	for _, chunk := range chunks {
 		wg.Add(1)
+
 		go func(chunk string) {
 			defer wg.Done()
+			shouldIgnore := false
 			header := strings.Split(chunk, "\n")[0]
 
+			// Check if the first line contains any of the files to ignore
 			for _, file := range FILES_TO_IGNORE {
 				if strings.Contains(header, file) {
-					log.Debug("Ignoring", "file", file)
-					return
+					shouldIgnore = true
 				}
 			}
 
-			log.Debug("Using", "header", header)
-			filtered <- chunk
+			if !shouldIgnore {
+				filtered <- chunk
+			}
 		}(chunk)
 	}
 
@@ -92,44 +96,17 @@ func prepareSystemMessage() string {
 	return fmt.Sprintf("%s\n\n%s", CONFIG.Data.GenerateSystemMessage, examples)
 }
 
-type OpenAI struct {
-	ApiKey string
-}
-
-func NewOpenAI(apiKey string) *OpenAI {
-	return &OpenAI{
-		ApiKey: apiKey,
-	}
-}
-
-func (o *OpenAI) GetChatCompletion(diff string, msg string) (string, error) {
-	client := openai.NewClient(o.ApiKey)
-	system := prepareSystemMessage()
-	prompt := fmt.Sprintf("message: %s\n\ndiff: %s", msg, prepareDiff(diff))
-	resp, err := client.CreateChatCompletion(
-		context.Background(),
-		openai.ChatCompletionRequest{
-			Model: CONFIG.Data.GenerateModel,
-			Messages: []openai.ChatCompletionMessage{
-				{
-					Role:    openai.ChatMessageRoleSystem,
-					Content: system,
-				},
-				{
-					Role:    openai.ChatMessageRoleUser,
-					Content: prompt,
-				},
-			},
-		},
-	)
+func getStagedChanges() (string, error) {
+	cmd := exec.Command("git", "diff", "--cached")
+	stdout, err := cmd.Output()
 
 	if err != nil {
 		return "", err
 	}
 
-	log.Debug("", "system", system)
-	log.Debug("", "prompt", prompt)
-	log.Debug("", "usage", resp.Usage)
+	if len(stdout) == 0 {
+		return "", errors.New("no staged changes found")
+	}
 
-	return resp.Choices[0].Message.Content, nil
+	return string(stdout), nil
 }

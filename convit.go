@@ -33,19 +33,35 @@ var CommitTypes = []CommitType{
 }
 
 type Convit struct {
-	client *OpenAI
+	client MessageClient
 }
 
 func NewConvit() *Convit {
-	apiKey := os.Getenv("OPENAI_API_KEY")
-	if len(apiKey) == 0 {
-		return &Convit{
-			client: nil,
+	var (
+		client MessageClient
+		apiKey string
+	)
+
+	// Depending on the user selected model, we need to set the corresponding API key
+	switch CONFIG.Data.GenerateModel {
+	case Claude3Dot5Sonnet:
+		apiKey = os.Getenv("ANTHROPIC_API_KEY")
+		if apiKey == "" {
+			log.Fatal("ANTHROPIC_API_KEY is not set")
 		}
+
+		client = NewAnthropic(apiKey, CONFIG.Data.GenerateModel)
+	default:
+		apiKey = os.Getenv("OPENAI_API_KEY")
+		if apiKey == "" {
+			log.Fatal("OPENAI_API_KEY is not set")
+		}
+
+		client = NewOpenAI(apiKey, CONFIG.Data.GenerateModel)
 	}
 
 	return &Convit{
-		client: NewOpenAI(apiKey),
+		client,
 	}
 }
 
@@ -149,7 +165,7 @@ func (c *Convit) Generate() error {
 	var response string
 	for {
 		if err := spinner.New().TitleStyle(lipgloss.NewStyle()).Title("Generating your commit message...").Action(func() {
-			response, err = c.client.GetChatCompletion(diff, msg)
+			response, err = c.client.CreateMessage(diff, msg)
 			if err != nil {
 				log.Fatal(err)
 			}
