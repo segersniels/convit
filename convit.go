@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"regexp"
 	"strings"
 
 	"github.com/charmbracelet/huh"
@@ -16,6 +17,7 @@ import (
 type CommitType struct {
 	Type        string
 	Description string
+	SubType     string
 }
 
 var CommitTypes = []CommitType{
@@ -26,10 +28,13 @@ var CommitTypes = []CommitType{
 	{Type: "style", Description: "Changes the style of the code eg. linting"},
 	{Type: "perf", Description: "Improves the performance of the code"},
 	{Type: "test", Description: "Adding missing tests or correcting existing tests"},
-	{Type: "chore", Description: "Changes that don't change source code or tests"},
 	{Type: "build", Description: "Changes that affect the build system or external dependencies (example scopes: gulp, broccoli, npm)"},
 	{Type: "ci", Description: "Changes to CI configuration files and scripts"},
 	{Type: "revert", Description: "Reverts a previous commit"},
+	{Type: "chore", Description: "Changes that don't change source code or tests"},
+	{Type: "chore", SubType: "release", Description: "Release / Version tags"},
+	{Type: "chore", SubType: "deps", Description: "Add, remove or update dependencies"},
+	{Type: "chore", SubType: "dev-deps", Description: "Add, remove or update development dependencies"},
 }
 
 type Convit struct {
@@ -70,14 +75,24 @@ func (c *Convit) promptForScope() (string, error) {
 	var main, opt string
 	options := make([]huh.Option[string], len(CommitTypes))
 	for i, ct := range CommitTypes {
-		options[i] = huh.NewOption(fmt.Sprintf("%s: %s", ct.Type, ct.Description), ct.Type)
+		if ct.SubType != "" {
+			options[i] = huh.NewOption(fmt.Sprintf("%s(%s): %s", ct.Type, ct.SubType, ct.Description), fmt.Sprintf("%s(%s)", ct.Type, ct.SubType))
+		} else {
+			options[i] = huh.NewOption(fmt.Sprintf("%s: %s", ct.Type, ct.Description), ct.Type)
+		}
 	}
 
+	var shouldAskForSubType = true
 	form := huh.NewForm(
 		huh.NewGroup(
 			huh.NewSelect[string]().Title("Select the type of commit").Options(options...).Value(&main).Filtering(true).Validate(func(val string) error {
 				if len(val) == 0 {
 					return errors.New("type cannot be empty")
+				}
+
+				// There's already an optional subtype associated with the chosen option, so we don't need to show the subtype prompt
+				if regexp.MustCompile(`\((.*?)\)`).MatchString(val) {
+					shouldAskForSubType = false
 				}
 
 				return nil
@@ -86,7 +101,7 @@ func (c *Convit) promptForScope() (string, error) {
 		huh.NewGroup(
 			huh.NewInput().Title("Provide an optional scope (leave empty for none)").Value(&opt),
 		).WithHideFunc(func() bool {
-			return !CONFIG.Data.PromptForOptionalSubType
+			return !CONFIG.Data.PromptForOptionalSubType || !shouldAskForSubType
 		}),
 	)
 
