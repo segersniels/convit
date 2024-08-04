@@ -31,7 +31,7 @@ type ConfigData struct {
 
 var CONFIG = config.NewConfig("convit", ConfigData{
 	LowerCaseFirstLetter:     true,
-	PromptForOptionalSubType: true,
+	PromptForOptionalSubType: false,
 	GenerateModel:            GPT4oMini,
 	GenerateSystemMessage:    SYSTEM_MESSAGE,
 })
