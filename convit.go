@@ -72,38 +72,55 @@ func NewConvit() *Convit {
 	}
 }
 
-// Prompt the user for the main commit type and optional sub-type
+// promptForScope prompts the user for the main commit type and optional sub-type
 func (c *Convit) promptForScope() (string, error) {
 	var main, opt string
-	options := make([]huh.Option[string], len(CommitTypes))
-	for i, ct := range CommitTypes {
+
+	options := make([]huh.Option[string], 0, len(CommitTypes))
+	for _, ct := range CommitTypes {
+		optionText := fmt.Sprintf("%s: %s", ct.Type, ct.Description)
+		optionValue := ct.Type
+
+		// If there's a sub-type associated with the commit type, include it in the option text and value
 		if ct.SubType != "" {
-			options[i] = huh.NewOption(fmt.Sprintf("%s(%s): %s", ct.Type, ct.SubType, ct.Description), fmt.Sprintf("%s(%s)", ct.Type, ct.SubType))
-		} else {
-			options[i] = huh.NewOption(fmt.Sprintf("%s: %s", ct.Type, ct.Description), ct.Type)
+			optionValue = fmt.Sprintf("%s(%s)", ct.Type, ct.SubType)
+			optionText = fmt.Sprintf("%s: %s", optionValue, ct.Description)
 		}
+
+		options = append(options, huh.NewOption(optionText, optionValue))
 	}
 
-	var shouldAskForSubType = true
 	form := huh.NewForm(
 		huh.NewGroup(
-			huh.NewSelect[string]().Title("Select the type of commit").Options(options...).Value(&main).Filtering(true).Validate(func(val string) error {
-				if len(val) == 0 {
-					return errors.New("type cannot be empty")
-				}
+			huh.NewSelect[string]().
+				Title("Select the type of commit").
+				Options(options...).
+				Value(&main).
+				Filtering(true).
+				Validate(func(val string) error {
+					if val == "" {
+						return errors.New("type cannot be empty")
+					}
 
-				// There's already an optional subtype associated with the chosen option, so we don't need to show the subtype prompt
-				if regexp.MustCompile(`\((.*?)\)`).MatchString(val) {
-					shouldAskForSubType = false
-				}
-
-				return nil
-			}),
+					return nil
+				}),
 		),
 		huh.NewGroup(
-			huh.NewInput().Title("Provide an optional scope (leave empty for none)").Value(&opt),
+			huh.NewInput().
+				Title("Provide an optional scope (leave empty for none)").
+				Value(&opt),
 		).WithHideFunc(func() bool {
-			return !CONFIG.Data.PromptForOptionalSubType || !shouldAskForSubType
+			// If the user selects a type with a sub-type, we don't need to ask for the sub-type
+			if regexp.MustCompile(`\((.*?)\)`).MatchString(main) {
+				return true
+			}
+
+			// If the user doesn't want to be prompted for an optional sub-type, skip the sub-type prompt
+			if !CONFIG.Data.PromptForOptionalSubType {
+				return true
+			}
+
+			return false
 		}),
 	)
 
@@ -111,8 +128,8 @@ func (c *Convit) promptForScope() (string, error) {
 		return "", err
 	}
 
-	// Just use the main type if no optional sub-type is provided
-	if len(opt) == 0 {
+	// If the user didn't provide an optional sub-type, just return the main type
+	if opt == "" {
 		return main, nil
 	}
 
