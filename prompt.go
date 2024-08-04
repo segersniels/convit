@@ -11,7 +11,7 @@ import (
 const SYSTEM_MESSAGE string = `Generate a conventional commit message that follows the Conventional Commits specification as described below.
 A scope may be provided to a commit’s type, to provide additional contextual information and is contained within parenthesis, e.g., feat(parser): add ability to parse arrays.
 Base yourself on the adjusted files in the diff and the actual code changes to determine what the type and scope of the message should be.
-Don't include a message body, just the commit title. Don't surround it in backticks or anything of custom markdown formatting.`
+Don't include a message body, just the commit title (a single line). Don't surround it in backticks or anything of custom markdown formatting.`
 
 const (
 	FULL_SUFFIX  = "You will be given a diff of the changes made to the codebase. You will need to generate a full commit message that includes the type, optional scope, and description of the changes."
