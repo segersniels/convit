@@ -29,7 +29,7 @@ USAGE:
    convit [global options] command [command options]
 
 VERSION:
-   0.1.0
+   x.x.x
 
 COMMANDS:
    commit    Write a commit message
@@ -44,10 +44,10 @@ GLOBAL OPTIONS:
 
 ### Generate
 
-Experimental feature that uses OpenAI to assist with writing a conventional commit message. It looks at the currently staged changes that you want to commit and a user specified commit message to determine the type & optional scope of the commit.
+Experimental feature that uses AI to assist with writing a conventional commit message. It looks at the currently staged changes that you want to commit and a user specified commit message to determine the type & optional scope of the commit.
 
 ```bash
 convit generate
 ```
 
-> This feature is _bring-your-own-key_ and requires the `OPENAI_API_KEY` environment variable to be set.
+> This feature is _bring-your-own-key_ and requires the `OPENAI_API_KEY` or `ANTHROPIC_API_KEY` environment variable to be set depending on the configured model.
