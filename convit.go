@@ -23,6 +23,7 @@ type CommitType struct {
 }
 
 var CommitTypes = []CommitType{
+	{Type: "chore", Description: "Changes that don't change source code or tests"},
 	{Type: "feat", Description: "Adds or removes a new feature"},
 	{Type: "fix", Description: "Fixes a bug"},
 	{Type: "refactor", Description: "A code change that neither fixes a bug nor adds a feature, eg. renaming a variable, remove dead code, etc."},
@@ -33,7 +34,6 @@ var CommitTypes = []CommitType{
 	{Type: "build", Description: "Changes that affect the build system or external dependencies (example scopes: gulp, broccoli, npm)"},
 	{Type: "ci", Description: "Changes to CI configuration files and scripts"},
 	{Type: "revert", Description: "Reverts a previous commit"},
-	{Type: "chore", Description: "Changes that don't change source code or tests"},
 	{Type: "chore", SubType: "release", Description: "Release / Version tags"},
 	{Type: "chore", SubType: "deps", Description: "Add, remove or update dependencies"},
 	{Type: "chore", SubType: "dev-deps", Description: "Add, remove or update development dependencies"},
