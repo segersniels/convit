@@ -1,12 +1,14 @@
 package main
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"os"
 	"os/exec"
 	"regexp"
 	"strings"
+	"time"
 
 	"github.com/charmbracelet/huh"
 	"github.com/charmbracelet/huh/spinner"
@@ -179,12 +181,29 @@ func (c *Convit) Generate(partial bool) error {
 	var response string
 	for {
 		if err := spinner.New().TitleStyle(lipgloss.NewStyle()).Title("Generating your commit message...").Action(func() {
-			response, err = c.client.CreateMessage(diff, msg)
+			system := prepareSystemMessage(partial)
+			diff := prepareDiff(diff)
+
+			// If partial generation is requested, we need to add the user specified message to the prompt
+			if partial {
+				diff = fmt.Sprintf("message: %s\n\ndiff: %s", *msg, diff)
+			}
+
+			// Set a timeout for the request
+			ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+			defer cancel()
+
+			response, err = c.client.CreateMessage(ctx, system, diff)
 			if err != nil {
 				log.Fatal(err)
 			}
 		}).Run(); err != nil {
 			return err
+		}
+
+		// If the response is empty don't bother asking the user for confirmation
+		if len(response) == 0 {
+			return errors.New("failed to generate commit message")
 		}
 
 		var confirmation bool

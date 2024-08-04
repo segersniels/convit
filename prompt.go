@@ -88,18 +88,19 @@ func prepareDiff(diff string) string {
 	return strings.Join(removeLockFiles(chunks), "\n")
 }
 
-func prepareSystemMessage(full bool) string {
+func prepareSystemMessage(partial bool) string {
 	examples := "Example of the types with the description when they should be used:\n"
 	for _, ct := range CommitTypes {
 		examples += fmt.Sprintf("- %s: %s\n", ct.Type, ct.Description)
 	}
 
-	// If a full generation is requested make sure we explicitly mention that we want a full commit message
-	if full {
-		return fmt.Sprintf("%s\n\n%s\n\n%s", CONFIG.Data.GenerateSystemMessage, examples, FULL_SUFFIX)
+	// If a partial generation is requested make sure we explicitly mention that we only want the type and scope
+	suffix := FULL_SUFFIX
+	if partial {
+		suffix = SHORT_SUFFIX
 	}
 
-	return fmt.Sprintf("%s\n\n%s\n\n%s", CONFIG.Data.GenerateSystemMessage, examples, SHORT_SUFFIX)
+	return fmt.Sprintf("%s\n\n%s\n\n%s", CONFIG.Data.GenerateSystemMessage, examples, suffix)
 }
 
 func getStagedChanges() (string, error) {

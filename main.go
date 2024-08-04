@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -21,6 +22,16 @@ const (
 	GPT3Dot5Turbo     = "gpt-3.5-turbo"
 	Claude3Dot5Sonnet = "claude-3-5-sonnet-20240620"
 )
+
+const (
+	MessageRoleSystem    = "system"
+	MessageRoleUser      = "user"
+	MessageRoleAssistant = "assistant"
+)
+
+type MessageClient interface {
+	CreateMessage(ctx context.Context, system string, prompt string) (string, error)
+}
 
 type ConfigData struct {
 	LowerCaseFirstLetter     bool   `json:"lower_case_first_letter"`

@@ -6,66 +6,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-
-	openai "github.com/sashabaranov/go-openai"
 )
 
-const (
-	MessageRoleSystem    = "system"
-	MessageRoleUser      = "user"
-	MessageRoleAssistant = "assistant"
-)
-
-type MessageClient interface {
-	CreateMessage(diff string, msg *string) (string, error)
-}
-
-// Ensure OpenAI satisfies the MessageClient interface
-var _ MessageClient = (*OpenAI)(nil)
-
-type OpenAI struct {
-	apiKey string
-	model  string
-}
-
-func NewOpenAI(apiKey, model string) *OpenAI {
-	return &OpenAI{
-		apiKey,
-		model,
-	}
-}
-
-func (o *OpenAI) CreateMessage(diff string, msg *string) (string, error) {
-	client := openai.NewClient(o.apiKey)
-	resp, err := client.CreateChatCompletion(
-		context.Background(),
-		openai.ChatCompletionRequest{
-			Model: CONFIG.Data.GenerateModel,
-			Messages: []openai.ChatCompletionMessage{
-				{
-					Role:    openai.ChatMessageRoleSystem,
-					Content: prepareSystemMessage(msg == nil),
-				},
-				{
-					Role: openai.ChatMessageRoleUser,
-					Content: func() string {
-						if msg != nil {
-							return fmt.Sprintf("message: %s\n\ndiff: %s", *msg, prepareDiff(diff))
-						}
-
-						return prepareDiff(diff)
-					}(),
-				},
-			},
-		},
-	)
-
-	if err != nil {
-		return "", err
-	}
-
-	return resp.Choices[0].Message.Content, nil
-}
+var _ MessageClient = (*Anthropic)(nil)
 
 type ClaudeMessage struct {
 	Role    string `json:"role"`
@@ -97,9 +40,6 @@ type ClaudeMessagesResponse struct {
 	Usage   ClaudeMessagesResponseUsage     `json:"usage"`
 }
 
-// Ensure Anthropic satisfies the MessageClient interface
-var _ MessageClient = (*Anthropic)(nil)
-
 type Anthropic struct {
 	apiKey string
 	model  string
@@ -112,21 +52,15 @@ func NewAnthropic(apiKey, model string) *Anthropic {
 	}
 }
 
-func (a *Anthropic) CreateMessage(diff string, msg *string) (string, error) {
+func (a *Anthropic) CreateMessage(ctx context.Context, system string, prompt string) (string, error) {
 	body, err := json.Marshal(map[string]interface{}{
 		"model":      a.model,
 		"max_tokens": 4096,
-		"system":     prepareSystemMessage(msg == nil),
+		"system":     system,
 		"messages": []ClaudeMessage{
 			{
-				Role: MessageRoleUser,
-				Content: func() string {
-					if msg != nil {
-						return fmt.Sprintf("message: %s\n\ndiff: %s", *msg, prepareDiff(diff))
-					}
-
-					return prepareDiff(diff)
-				}(),
+				Role:    MessageRoleUser,
+				Content: prompt,
 			},
 		},
 	})
@@ -135,7 +69,7 @@ func (a *Anthropic) CreateMessage(diff string, msg *string) (string, error) {
 		return "", fmt.Errorf("error marshaling JSON payload: %v", err)
 	}
 
-	req, err := http.NewRequest(http.MethodPost, "https://api.anthropic.com/v1/messages", bytes.NewBuffer(body))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, "https://api.anthropic.com/v1/messages", bytes.NewBuffer(body))
 	if err != nil {
 		return "", fmt.Errorf("error creating request: %v", err)
 	}
