@@ -53,12 +53,7 @@ func main() {
 				Name:  "commit",
 				Usage: "Write a commit message",
 				Action: func(ctx *cli.Context) error {
-					err := convit.Commit()
-					if err != nil {
-						return err
-					}
-
-					return nil
+					return convit.Commit()
 				},
 			},
 			{
@@ -71,12 +66,7 @@ func main() {
 					},
 				},
 				Action: func(ctx *cli.Context) error {
-					err := convit.Generate(ctx.Bool("partial"))
-					if err != nil {
-						return err
-					}
-
-					return nil
+					return convit.Generate(ctx.Bool("partial"))
 				},
 			},
 			{
