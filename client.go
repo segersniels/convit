@@ -17,7 +17,7 @@ const (
 )
 
 type MessageClient interface {
-	CreateMessage(diff string, msg string) (string, error)
+	CreateMessage(diff string, msg *string) (string, error)
 }
 
 // Ensure OpenAI satisfies the MessageClient interface
@@ -35,7 +35,7 @@ func NewOpenAI(apiKey, model string) *OpenAI {
 	}
 }
 
-func (o *OpenAI) CreateMessage(diff string, msg string) (string, error) {
+func (o *OpenAI) CreateMessage(diff string, msg *string) (string, error) {
 	client := openai.NewClient(o.apiKey)
 	resp, err := client.CreateChatCompletion(
 		context.Background(),
@@ -44,11 +44,17 @@ func (o *OpenAI) CreateMessage(diff string, msg string) (string, error) {
 			Messages: []openai.ChatCompletionMessage{
 				{
 					Role:    openai.ChatMessageRoleSystem,
-					Content: prepareSystemMessage(),
+					Content: prepareSystemMessage(msg == nil),
 				},
 				{
-					Role:    openai.ChatMessageRoleUser,
-					Content: fmt.Sprintf("message: %s\n\ndiff: %s", msg, prepareDiff(diff)),
+					Role: openai.ChatMessageRoleUser,
+					Content: func() string {
+						if msg != nil {
+							return fmt.Sprintf("message: %s\n\ndiff: %s", *msg, prepareDiff(diff))
+						}
+
+						return prepareDiff(diff)
+					}(),
 				},
 			},
 		},
@@ -106,15 +112,21 @@ func NewAnthropic(apiKey, model string) *Anthropic {
 	}
 }
 
-func (a *Anthropic) CreateMessage(diff string, msg string) (string, error) {
+func (a *Anthropic) CreateMessage(diff string, msg *string) (string, error) {
 	body, err := json.Marshal(map[string]interface{}{
 		"model":      a.model,
 		"max_tokens": 4096,
-		"system":     prepareSystemMessage(),
+		"system":     prepareSystemMessage(msg == nil),
 		"messages": []ClaudeMessage{
 			{
-				Role:    MessageRoleUser,
-				Content: fmt.Sprintf("message: %s\n\ndiff: %s", msg, prepareDiff(diff)),
+				Role: MessageRoleUser,
+				Content: func() string {
+					if msg != nil {
+						return fmt.Sprintf("message: %s\n\ndiff: %s", *msg, prepareDiff(diff))
+					}
+
+					return prepareDiff(diff)
+				}(),
 			},
 		},
 	})

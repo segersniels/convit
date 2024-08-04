@@ -145,16 +145,16 @@ func (c *Convit) Commit() error {
 	return cmd.Run()
 }
 
-func (c *Convit) Generate() error {
-	// Get the commit message
-	msg, err := c.promptForMessage()
-	if err != nil {
-		return err
-	}
+func (c *Convit) Generate(full bool) error {
+	var msg *string
+	if !full {
+		// Get the commit message
+		message, err := c.promptForMessage()
+		if err != nil {
+			return err
+		}
 
-	// Check if the OpenAI client is initialized
-	if c.client == nil {
-		return errors.New("\"OPENAI_API_KEY\" is not set")
+		msg = &message
 	}
 
 	diff, err := getStagedChanges()

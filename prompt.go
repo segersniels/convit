@@ -9,13 +9,14 @@ import (
 )
 
 const SYSTEM_MESSAGE string = `Generate a conventional commit message that follows the Conventional Commits specification as described below.
-
 A scope may be provided to a commit’s type, to provide additional contextual information and is contained within parenthesis, e.g., feat(parser): add ability to parse arrays.
-It is your job to come up with only the type and optional scope based on the provided commit message and staged changes (diff) and then reply with the full commit message.
-Don't touch the original provided commit message, just include it and don't add stuff to it.
-
 Base yourself on the adjusted files in the diff and the actual code changes to determine what the type and scope of the message should be.
 Don't include a message body, just the commit title. Don't surround it in backticks or anything of custom markdown formatting.`
+
+const (
+	FULL_SUFFIX  = "You will be given a diff of the changes made to the codebase. You will need to generate a full commit message that includes the type, optional scope, and description of the changes."
+	SHORT_SUFFIX = "It is your job to come up with only the type and optional scope based on the provided commit message and staged changes (diff) and then reply with the full commit message. Don't touch the original provided commit message, just include it and don't add stuff to it."
+)
 
 var FILES_TO_IGNORE = []string{
 	"package-lock.json",
@@ -87,13 +88,18 @@ func prepareDiff(diff string) string {
 	return strings.Join(removeLockFiles(chunks), "\n")
 }
 
-func prepareSystemMessage() string {
+func prepareSystemMessage(full bool) string {
 	examples := "Example of the types with the description when they should be used:\n"
 	for _, ct := range CommitTypes {
 		examples += fmt.Sprintf("- %s: %s\n", ct.Type, ct.Description)
 	}
 
-	return fmt.Sprintf("%s\n\n%s", CONFIG.Data.GenerateSystemMessage, examples)
+	// If a full generation is requested make sure we explicitly mention that we want a full commit message
+	if full {
+		return fmt.Sprintf("%s\n\n%s\n\n%s", CONFIG.Data.GenerateSystemMessage, examples, FULL_SUFFIX)
+	}
+
+	return fmt.Sprintf("%s\n\n%s\n\n%s", CONFIG.Data.GenerateSystemMessage, examples, SHORT_SUFFIX)
 }
 
 func getStagedChanges() (string, error) {

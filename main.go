@@ -64,8 +64,14 @@ func main() {
 			{
 				Name:  "generate",
 				Usage: "Write a commit message with the help of OpenAI",
+				Flags: []cli.Flag{
+					&cli.BoolFlag{
+						Name:  "full",
+						Usage: "Let AI generate the entire commit message",
+					},
+				},
 				Action: func(ctx *cli.Context) error {
-					err := convit.Generate()
+					err := convit.Generate(ctx.Bool("full"))
 					if err != nil {
 						return err
 					}
