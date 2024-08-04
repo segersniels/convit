@@ -16,7 +16,7 @@ clean:
 	rm -rf $(BUILD_DIR)
 
 dev:
-	@go build -o $(BUILD_DIR)/$(BINARY_NAME) -ldflags $(LDFLAGS)
+	go build -o $(BUILD_DIR)/$(BINARY_NAME) -ldflags "$(LDFLAGS)"
 
 version:
 	@echo $(VERSION)
