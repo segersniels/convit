@@ -25,7 +25,7 @@ func (o *OpenAI) CreateMessage(ctx context.Context, system string, prompt string
 	resp, err := client.CreateChatCompletion(
 		ctx,
 		openai.ChatCompletionRequest{
-			Model: CONFIG.Data.GenerateModel,
+			Model: o.model,
 			Messages: []openai.ChatCompletionMessage{
 				{
 					Role:    openai.ChatMessageRoleSystem,

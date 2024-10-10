@@ -39,37 +39,10 @@ var CommitTypes = []CommitType{
 	{Type: "chore", SubType: "dev-deps", Description: "Add, remove or update development dependencies"},
 }
 
-type Convit struct {
-	client MessageClient
-}
+type Convit struct{}
 
 func NewConvit() *Convit {
-	var (
-		client MessageClient
-		apiKey string
-	)
-
-	// Depending on the user selected model, we need to set the corresponding API key
-	switch CONFIG.Data.GenerateModel {
-	case Claude3Dot5Sonnet:
-		apiKey = os.Getenv("ANTHROPIC_API_KEY")
-		if apiKey == "" {
-			log.Fatal("ANTHROPIC_API_KEY is not set")
-		}
-
-		client = NewAnthropic(apiKey, CONFIG.Data.GenerateModel)
-	default:
-		apiKey = os.Getenv("OPENAI_API_KEY")
-		if apiKey == "" {
-			log.Fatal("OPENAI_API_KEY is not set")
-		}
-
-		client = NewOpenAI(apiKey, CONFIG.Data.GenerateModel)
-	}
-
-	return &Convit{
-		client,
-	}
+	return &Convit{}
 }
 
 // promptForScope prompts the user for the main commit type and optional sub-type
@@ -180,6 +153,8 @@ func (c *Convit) Commit() error {
 }
 
 func (c *Convit) Generate(partial bool) error {
+	provider := NewProvider(CONFIG.Data.GenerateModel)
+
 	var msg *string
 	if partial {
 		message, err := c.promptForMessage()
@@ -210,7 +185,7 @@ func (c *Convit) Generate(partial bool) error {
 			ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 			defer cancel()
 
-			response, err = c.client.CreateMessage(ctx, system, diff)
+			response, err = provider.client.CreateMessage(ctx, system, diff)
 			if err != nil {
 				log.Fatal(err)
 			}
