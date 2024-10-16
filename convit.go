@@ -217,36 +217,65 @@ func (c *Convit) Generate(partial bool) error {
 	return cmd.Run()
 }
 
-func checkLatestRelease() {
+func (c *Convit) Update() error {
+	version, err := fetchLatestVersion()
+	if err != nil {
+		return err
+	}
+
+	ldflags := fmt.Sprintf(`"-w -s -X main.AppVersion=%s -X main.AppName=convit"`, version)
+	origin := fmt.Sprintf("github.com/segersniels/convit@%s", version)
+	cmd := exec.Command("go", "install", "-ldflags", ldflags, origin)
+
+	// If the GOBIN environment variable is not set, set it to `/usr/local/bin/`.
+	// Users can override it by setting GOBIN in their environment.
+	if os.Getenv("GOBIN") == "" {
+		cmd.Env = append(os.Environ(), "GOBIN=/usr/local/bin/")
+	}
+
+	return cmd.Run()
+}
+
+func fetchLatestVersion() (*version.Version, error) {
 	client := &http.Client{Timeout: 5 * time.Second}
 	resp, err := client.Get("https://api.github.com/repos/segersniels/convit/releases/latest")
 	if err != nil {
-		log.Debug("Failed to check for latest release", "error", err)
-		return
+		return nil, err
 	}
 	defer resp.Body.Close()
 
 	var release struct {
 		TagName string `json:"tag_name"`
 	}
+
 	if err := json.NewDecoder(resp.Body).Decode(&release); err != nil {
 		log.Debug("Failed to parse latest release info", "error", err)
-		return
+		return nil, err
 	}
 
 	latestVersion, err := version.NewVersion(release.TagName)
 	if err != nil {
 		log.Debug("Failed to parse latest version", "error", err)
-		return
+		return nil, err
+	}
+
+	return latestVersion, nil
+}
+
+func compareCurrentVersionAgainstLatest() error {
+	latestVersion, err := fetchLatestVersion()
+	if err != nil {
+		return err
 	}
 
 	currentVersion, err := version.NewVersion(AppVersion)
 	if err != nil {
-		log.Debug("Failed to parse current version", "error", err)
-		return
+		return err
 	}
 
 	if latestVersion.GreaterThan(currentVersion) {
-		fmt.Printf("A new version of %s is available (%s)\n\n", AppName, latestVersion)
+		fmt.Printf("A new version of %s is available (%s). Run `convit update` to update.\n\n", AppName, latestVersion)
 	}
+
+	return nil
 }

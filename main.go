@@ -48,7 +48,10 @@ var CONFIG = config.NewConfig("convit", ConfigData{
 })
 
 func main() {
-	checkLatestRelease()
+	err := compareCurrentVersionAgainstLatest()
+	if err != nil {
+		log.Debug("Failed to check for latest release", "error", err)
+	}
 
 	debug := os.Getenv("DEBUG")
 	if debug != "" {
@@ -62,6 +65,13 @@ func main() {
 		Usage:   "Write conventional commit messages",
 		Version: AppVersion,
 		Commands: []*cli.Command{
+			{
+				Name:  "update",
+				Usage: "Update convit to the latest version",
+				Action: func(ctx *cli.Context) error {
+					return convit.Update()
+				},
+			},
 			{
 				Name:  "commit",
 				Usage: "Write a commit message",
