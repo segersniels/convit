@@ -2,8 +2,10 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"net/http"
 	"os"
 	"os/exec"
 	"regexp"
@@ -14,6 +16,7 @@ import (
 	"github.com/charmbracelet/huh/spinner"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/charmbracelet/log"
+	"github.com/hashicorp/go-version"
 )
 
 type CommitType struct {
@@ -212,4 +215,38 @@ func (c *Convit) Generate(partial bool) error {
 	cmd := exec.Command("git", "commit", "-m", response)
 
 	return cmd.Run()
+}
+
+func checkLatestRelease() {
+	client := &http.Client{Timeout: 5 * time.Second}
+	resp, err := client.Get("https://api.github.com/repos/segersniels/convit/releases/latest")
+	if err != nil {
+		log.Debug("Failed to check for latest release", "error", err)
+		return
+	}
+	defer resp.Body.Close()
+
+	var release struct {
+		TagName string `json:"tag_name"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&release); err != nil {
+		log.Debug("Failed to parse latest release info", "error", err)
+		return
+	}
+
+	latestVersion, err := version.NewVersion(release.TagName)
+	if err != nil {
+		log.Debug("Failed to parse latest version", "error", err)
+		return
+	}
+
+	currentVersion, err := version.NewVersion(AppVersion)
+	if err != nil {
+		log.Debug("Failed to parse current version", "error", err)
+		return
+	}
+
+	if latestVersion.GreaterThan(currentVersion) {
+		fmt.Printf("A new version of %s is available (%s)\n\n", AppName, latestVersion)
+	}
 }

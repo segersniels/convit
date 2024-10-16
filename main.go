@@ -48,6 +48,8 @@ var CONFIG = config.NewConfig("convit", ConfigData{
 })
 
 func main() {
+	checkLatestRelease()
+
 	debug := os.Getenv("DEBUG")
 	if debug != "" {
 		log.SetLevel(log.DebugLevel)
