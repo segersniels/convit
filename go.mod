@@ -1,4 +1,4 @@
-module convit
+module github.com/segersniels/convit
 
 go 1.22.2
 
