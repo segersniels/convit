@@ -37,6 +37,7 @@ var CommitTypes = []CommitType{
 	{Type: "chore", SubType: "release", Description: "Release / Version tags"},
 	{Type: "chore", SubType: "deps", Description: "Add, remove or update dependencies"},
 	{Type: "chore", SubType: "dev-deps", Description: "Add, remove or update development dependencies"},
+	{Type: "chore", SubType: "types", Description: "Add or update types."},
 }
 
 type Convit struct{}
