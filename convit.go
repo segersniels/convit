@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -224,9 +225,12 @@ func (c *Convit) Update() error {
 		return err
 	}
 
-	ldflags := fmt.Sprintf(`"-w -s -X main.AppVersion=%s -X main.AppName=convit"`, version)
+	ldflags := fmt.Sprintf("-w -s -X main.AppVersion=%s -X main.AppName=convit", version)
 	origin := fmt.Sprintf("github.com/segersniels/convit@%s", version)
-	cmd := exec.Command("go", "install", "-ldflags", ldflags, origin)
+	args := []string{"install", "-ldflags", ldflags, origin}
+	cmd := exec.Command("go", args...)
+
+	log.Debug("Running update command", "command", cmd.String())
 
 	// If the GOBIN environment variable is not set, set it to `/usr/local/bin/`.
 	// Users can override it by setting GOBIN in their environment.
@@ -234,7 +238,19 @@ func (c *Convit) Update() error {
 		cmd.Env = append(os.Environ(), "GOBIN=/usr/local/bin/")
 	}
 
-	return cmd.Run()
+	// Capture the output of the command
+	var stdout, stderr bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+
+	err = cmd.Run()
+	if err != nil {
+		log.Debug("Update failed", "error", err, "stdout", stdout.String(), "stderr", stderr.String())
+		return errors.New(stderr.String())
+	}
+
+	log.Info(fmt.Sprintf("Updated to version %s", version))
+	return nil
 }
 
 type Failure struct {
@@ -266,6 +282,8 @@ func fetchLatestVersion() (*version.Version, error) {
 			return nil, err
 		}
 
+		log.Error("Failed to fetch latest version", "error", result.Message)
+
 		return nil, errors.New(result.Message)
 	}
 
@@ -282,23 +300,29 @@ func fetchLatestVersion() (*version.Version, error) {
 	return latestVersion, nil
 }
 
-func compareCurrentVersionAgainstLatest(appVersion string) error {
+func checkIfNewVersionIsAvailable() error {
 	// If the AppVersion is not set, we don't need to check for an update.
 	// This is the case when running `go install` or `go build` without
 	// specifying the LDFLAGS properly.
-	if appVersion == "" {
+	if AppVersion == "" {
 		return nil
 	}
+
+	currentVersion, err := version.NewVersion(AppVersion)
+	if err != nil {
+		log.Debug("Failed to parse current version", "error", err)
+		return nil
+	}
+
+	log.Debug("Current version", "version", currentVersion)
 
 	latestVersion, err := fetchLatestVersion()
 	if err != nil {
 		return err
 	}
 
-	currentVersion, err := version.NewVersion(appVersion)
-	if err != nil {
-		return err
-	}
+	log.Debug("Current version", "version", currentVersion)
+	log.Debug("Latest version", "version", latestVersion)
 
 	if latestVersion.GreaterThan(currentVersion) {
 		fmt.Printf("A new version of %s is available (%s). Run `convit update` to update.\n\n", AppName, latestVersion)

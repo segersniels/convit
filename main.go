@@ -48,7 +48,7 @@ var CONFIG = config.NewConfig("convit", ConfigData{
 })
 
 func main() {
-	err := compareCurrentVersionAgainstLatest(AppVersion)
+	err := checkIfNewVersionIsAvailable()
 	if err != nil {
 		log.Debug("Failed to check for latest release", "error", err)
 	}
