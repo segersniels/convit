@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"os"
 	"os/exec"
@@ -236,6 +237,14 @@ func (c *Convit) Update() error {
 	return cmd.Run()
 }
 
+type Failure struct {
+	Message string `json:"message"`
+}
+
+type Success struct {
+	TagName string `json:"tag_name"`
+}
+
 func fetchLatestVersion() (*version.Version, error) {
 	client := &http.Client{Timeout: 5 * time.Second}
 	resp, err := client.Get("https://api.github.com/repos/segersniels/convit/releases/latest")
@@ -244,31 +253,49 @@ func fetchLatestVersion() (*version.Version, error) {
 	}
 	defer resp.Body.Close()
 
-	var release struct {
-		TagName string `json:"tag_name"`
-	}
-
-	if err := json.NewDecoder(resp.Body).Decode(&release); err != nil {
-		log.Debug("Failed to parse latest release info", "error", err)
+	// Read the entire response body
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
 		return nil, err
 	}
 
-	latestVersion, err := version.NewVersion(release.TagName)
+	// Check if the response is a rate limit error
+	if resp.StatusCode != http.StatusOK {
+		var result Failure
+		if err := json.Unmarshal(body, &result); err != nil {
+			return nil, err
+		}
+
+		return nil, errors.New(result.Message)
+	}
+
+	var result Success
+	if err := json.Unmarshal(body, &result); err != nil {
+		return nil, err
+	}
+
+	latestVersion, err := version.NewVersion(result.TagName)
 	if err != nil {
-		log.Debug("Failed to parse latest version", "error", err)
 		return nil, err
 	}
 
 	return latestVersion, nil
 }
 
-func compareCurrentVersionAgainstLatest() error {
+func compareCurrentVersionAgainstLatest(appVersion string) error {
+	// If the AppVersion is not set, we don't need to check for an update.
+	// This is the case when running `go install` or `go build` without
+	// specifying the LDFLAGS properly.
+	if appVersion == "" {
+		return nil
+	}
+
 	latestVersion, err := fetchLatestVersion()
 	if err != nil {
 		return err
 	}
 
-	currentVersion, err := version.NewVersion(AppVersion)
+	currentVersion, err := version.NewVersion(appVersion)
 	if err != nil {
 		return err
 	}
