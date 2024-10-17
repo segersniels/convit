@@ -282,8 +282,6 @@ func fetchLatestVersion() (*version.Version, error) {
 			return nil, err
 		}
 
-		log.Error("Failed to fetch latest version", "error", result.Message)
-
 		return nil, errors.New(result.Message)
 	}
 
