@@ -1,7 +1,7 @@
 .PHONY: build clean dev version demo $(TARGETS)
 
 BINARY_NAME := convit
-VERSION := 0.7.1
+VERSION := 0.7.2
 BUILD_DIR := bin
 
 TARGETS := darwin-arm64 darwin-amd64 linux-arm64 linux-amd64
