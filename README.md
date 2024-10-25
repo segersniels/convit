@@ -1,5 +1,9 @@
 # convit
 
+> [!NOTE]
+> This tool has been deprecated in favor of [`cmt`](https://github.com/segersniels/cmt) and won't be maintained anymore.
+> For future updates check out [`cmt`](https://github.com/segersniels/cmt).
+
 In an effort to make it easier to write conventional commit messages, `convit` is a command-line tool that allows you to write conventional commit messages.
 
 ![img](./demo.gif)
